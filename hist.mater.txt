@@ -1,0 +1,139 @@
+    1  nmtui
+    2  reboot
+    3  yum install -y yum-utils
+    4  yum-config-manager     --add-repo     https://download.docker.com/linux/centos/docker-ce.repo
+    5  cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
+    6  [kubernetes]
+    7  name=Kubernetes
+    8  baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
+    9  enabled=1
+   10  gpgcheck=1
+   11  repo_gpgcheck=1
+   12  gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+   13  exclude=kubelet kubeadm kubectl
+   14  EOF
+   15  clear
+   16  nano /etc/selinux/config
+   17  nano /etc/fstab
+   18  yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+   19  yum install -y containerd
+   20  reboot
+   21  firewall-cmd --permanent --add-port=6443/tcp # Kubernetes API server
+   22  firewall-cmd --permanent --add-port=2379-2380/tcp # etcd server client API
+   23  firewall-cmd --permanent --add-port=10250/tcp # Kubelet API
+   24  firewall-cmd --permanent --add-port=10251/tcp # kube-scheduler
+   25  firewall-cmd --permanent --add-port=10252/tcp # kube-controller-manager
+   26  firewall-cmd --permanent --add-port=8285/udp # Flannel
+   27  firewall-cmd --permanent --add-port=8472/udp # Flannel
+   28  firewall-cmd --add-masquerade --permanent
+   29  # only if you want NodePorts exposed on control plane IP as well
+   30  firewall-cmd --permanent --add-port=30000-32767/tcp
+   31  firewall-cmd --reload
+   32  systemctl restart firewalld
+   33  modprobe bridge
+   34   systemctl enable containerd.service  --now
+   35  mv /etc/containerd/config.toml /root
+   36  systemctl restart containerd
+   37  kubeadm config images pull
+   38  modprobe br_netfilter
+   39  echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
+   40  clear
+   41  kubeadm join k8s.candocollege.local:6443 --token rqvx5s.eeu1wqpwm27suhx8 --discovery-token-ca-cert-hash sha256:121c4a971f0e15e3a5c3baa9ebe5de893462aef7cd00b994729ff565760a0cce --control-plane
+   42  nano /etc/hosts
+   43  kubeadm join k8s.candocollege.local:6443 --token rqvx5s.eeu1wqpwm27suhx8 --discovery-token-ca-cert-hash sha256:121c4a971f0e15e3a5c3baa9ebe5de893462aef7cd00b994729ff565760a0cce --control-plane
+   44  kubeadm init --control-plane-endpoint k8s.candocollege.local --apiserver-cert-extra-sans k8s.candocollege.local --upload-certs --pod-network-cidr=10.244.0.0/16
+   45  journalctl -xeu kubelet
+   46  nano /etc/containerd/config.toml
+   47  yum update
+   48  systemctl daemon-reload
+   49  systemctl enable --now containerd
+   50  journalctl -ru containerd
+   51  history
+   52  clear
+   53  kubeadm join k8s.candocollege.local:6443 --token rqvx5s.eeu1wqpwm27suhx8 --discovery-token-ca-cert-hash sha256:121c4a971f0e15e3a5c3baa9ebe5de893462aef7cd00b994729ff565760a0cce --control-plane
+   54  kubeadm reset --force
+   55  kubeadm join k8s.candocollege.local:6443 --token rqvx5s.eeu1wqpwm27suhx8 --discovery-token-ca-cert-hash sha256:121c4a971f0e15e3a5c3baa9ebe5de893462aef7cd00b994729ff565760a0cce --control-plane
+   56  systemctl status kubelet.service 
+   57  systemctl enable kubelet.service --now
+   58  kubeadm join k8s.candocollege.local:6443 --token rqvx5s.eeu1wqpwm27suhx8 --discovery-token-ca-cert-hash sha256:121c4a971f0e15e3a5c3baa9ebe5de893462aef7cd00b994729ff565760a0cce --control-plane
+   59  net.bridge.bridge-nf-call-ip6tables = 1
+   60  net.bridge.bridge-nf-call-iptables = 1
+   61  EOF
+   62  sysctl --system
+   63  kubeadm join k8s.candocollege.local:6443 --token rqvx5s.eeu1wqpwm27suhx8 --discovery-token-ca-cert-hash sha256:121c4a971f0e15e3a5c3baa9ebe5de893462aef7cd00b994729ff565760a0cce --control-plane
+   64  dnf install -y iproute-tc
+   65  kubeadm join k8s.candocollege.local:6443 --token rqvx5s.eeu1wqpwm27suhx8 --discovery-token-ca-cert-hash sha256:121c4a971f0e15e3a5c3baa9ebe5de893462aef7cd00b994729ff565760a0cce --control-plane
+   66  clear
+   67  reboot
+   68  kubeadm join k8s.candocollege.local:6443 --token rqvx5s.eeu1wqpwm27suhx8 --discovery-token-ca-cert-hash sha256:121c4a971f0e15e3a5c3baa9ebe5de893462aef7cd00b994729ff565760a0cce --control-plane
+   69  echo 1 > /proc/sys/net/ipv4/ip_forward
+   70  modprobe --first-time bridge
+   71  modprobe br_netfilter
+   72  echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
+   73  /etc/sysctl.conf
+   74  nano /etc/sysctl.conf
+   75  sudo sysctl -p
+   76  kubeadm join k8s.candocollege.local:6443 --token rqvx5s.eeu1wqpwm27suhx8 --discovery-token-ca-cert-hash sha256:121c4a971f0e15e3a5c3baa9ebe5de893462aef7cd00b994729ff565760a0cce --control-plane
+   77  kubeadm reset --force
+   78  kubeadm join k8s.candocollege.local:6443 --token rqvx5s.eeu1wqpwm27suhx8 --discovery-token-ca-cert-hash sha256:121c4a971f0e15e3a5c3baa9ebe5de893462aef7cd00b994729ff565760a0cce --control-plane
+   79  cat /sys/class/dmi/id/product_uuid
+   80  yum update -y
+   81  firewall-cmd --permanent --add-port=6443/tcp
+   82  firewall-cmd --permanent --add-port=2379-2380/tcp
+   83  firewall-cmd --permanent --add-port=10250/tcp
+   84  firewall-cmd --permanent --add-port=10251/tcp
+   85  firewall-cmd --permanent --add-port=10252/tcp
+   86  firewall-cmd --permanent --add-port=10255/tcp
+   87  firewall-cmd --reload
+   88  modprobe br_netfilter
+   89  echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
+   90  sed -i --follow-symlinks 's/SELINUX=enforcing/SELINUX=disabled/g' /etc/sysconfig/selinux
+   91  nano /etc/hosts
+   92  kubeadm reset
+   93  yum install install -y containerd.io
+   94  yum install -y containerd.io
+   95  ping 4.2.2.4
+   96  yum install -y containerd.io
+   97  dnf install kubeadm -y
+   98  sudo tee /etc/sysctl.d/kubernetes.conf<<EOF
+   99  net.bridge.bridge-nf-call-ip6tables = 1
+  100  net.bridge.bridge-nf-call-iptables = 1
+  101  net.ipv4.ip_forward = 1
+  102  EOF
+  103  sysctl --system
+  104  sudo tee /etc/sysctl.d/kubernetes.conf<<EOF
+  105  net.bridge.bridge-nf-call-ip6tables = 1
+  106  net.bridge.bridge-nf-call-iptables = 1
+  107  net.ipv4.ip_forward = 1
+  108  EOF
+  109  sudo tee /etc/modules-load.d/containerd.conf <<EOF
+  110  overlay
+  111  br_netfilter
+  112  EOF
+  113  sudo modprobe overlay
+  114  sudo modprobe br_netfilter
+  115  sudo su -
+  116  mkdir -p /etc/containerd
+  117  containerd config default>/etc/containerd/config.toml
+  118  sudo systemctl restart containerd
+  119  sudo systemctl enable containerd
+  120  systemctl status  containerd
+  121  lsmod | grep br_netfilter
+  122  systemctl enable kubelet --now
+  123  kubeadm config images pull
+  124  nano /etc/hosts
+  125  ping k8s.cando.com
+  126  kubeadm join k8s.cando.com:6443 --token pwx6wm.uwbiumlli5ifflso         --discovery-token-ca-cert-hash sha256:6e513deac7a51f1c85afe9358301a8227357a0ef1f06b0f6a92280751dcb301a
+  127  kubeadm reset
+  128  hostnamectl set-hostname node3.cando.com
+  129    kubeadm join k8s.cando.com:6443 --token pwx6wm.uwbiumlli5ifflso         --discovery-token-ca-cert-hash sha256:6e513deac7a51f1c85afe9358301a8227357a0ef1f06b0f6a92280751dcb301a         --control-plane --certificate-key e66760ae83467d10a163dc380699d8bc54e85e4e4c4e9680b2ddbe7fe3226b9a
+  130    kubeadm join k8s.cando.com:6443 --token 4f6w0q.96xb3r5dquh5dd23         --discovery-token-ca-cert-hash sha256:c6019565d759ce562054026654c925cec2b11060222d4b6140125da71e811fdb         --control-plane --certificate-key 6b30743e3a555f371f79e8c3f2eaf3878a75d8f16dad01fc71613c5d6580d776
+  131  nano /etc/hosts
+  132  cat /sys/class/dmi/id/product_uuid
+  133  history
+  134  dnf update
+  135  dnf update -y
+  136  yum install nfs-utils -y
+  137  kubectl get nodes
+  138  histroy > hist.mater.txt
+  139  history > hist.mater.txt

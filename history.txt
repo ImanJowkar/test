@@ -1,0 +1,114 @@
+    1  c
+    2  clear
+    3  nmtui
+    4  systemctl restart NetworkManager
+    5  clear
+    6  ip a
+    7  clear
+    8  reboot
+    9  ip a
+   10  yum install -y yum-utils
+   11  yum-config-manager     --add-repo     https://download.docker.com/linux/centos/docker-ce.repo
+   12  cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
+   13  [kubernetes]
+   14  name=Kubernetes
+   15  baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\$basearch
+   16  enabled=1
+   17  gpgcheck=1
+   18  repo_gpgcheck=1
+   19  gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
+   20  exclude=kubelet kubeadm kubectl
+   21  EOF
+   22  clear
+   23  nano /etc/selinux/config
+   24  nano /etc/fstab
+   25  yum install -y kubelet kubeadm kubectl --disableexcludes=kubernetes
+   26  yum install -y containerd
+   27  nano /etc/hosts
+   28  nmtui
+   29  reboot
+   30  firewall-cmd --permanent --add-port=6443/tcp # Kubernetes API server
+   31  firewall-cmd --permanent --add-port=2379-2380/tcp # etcd server client API
+   32  firewall-cmd --permanent --add-port=10250/tcp # Kubelet API
+   33  firewall-cmd --permanent --add-port=10251/tcp # kube-scheduler
+   34  firewall-cmd --permanent --add-port=10252/tcp # kube-controller-manager
+   35  firewall-cmd --permanent --add-port=8285/udp # Flannel
+   36  firewall-cmd --permanent --add-port=8472/udp # Flannel
+   37  firewall-cmd --add-masquerade --permanent
+   38  # only if you want NodePorts exposed on control plane IP as well
+   39  firewall-cmd --permanent --add-port=30000-32767/tcp
+   40  firewall-cmd --reload
+   41  systemctl restart firewalld
+   42  modprobe bridge
+   43  mv /etc/containerd/config.toml /root
+   44  systemctl restart containerd
+   45  modprobe br_netfilter
+   46  echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
+   47  kubeadm join k8s.candocollege.local:6443 --token u2grz0.0lm6zq1zhcztbopf         --discovery-token-ca-cert-hash sha256:df184349d8a72f8bc8e72362d5f418cb1236008f6bc843129277e54c36330d07
+   48  yum update
+   49  nano /etc/containerd/config.toml
+   50  clear
+   51  yum update
+   52  dnf install -y iproute-tc
+   53  cat /sys/class/dmi/id/product_uuid
+   54  yum update -y
+   55  nano /etc/hosts
+   56  yum install -y containerd.io
+   57  sudo su -
+   58  mkdir -p /etc/containerd
+   59  containerd config default>/etc/containerd/config.toml
+   60  sudo tee /etc/sysctl.d/kubernetes.conf<<EOF
+   61  net.bridge.bridge-nf-call-ip6tables = 1
+   62  net.bridge.bridge-nf-call-iptables = 1
+   63  net.ipv4.ip_forward = 1
+   64  EOF
+   65  sudo modprobe overlay
+   66  sudo modprobe br_netfilter
+   67  sudo tee /etc/modules-load.d/containerd.conf <<EOF
+   68  overlay
+   69  br_netfilter
+   70  EOF
+   71  sudo systemctl restart containerd
+   72  sudo systemctl enable containerd
+   73  systemctl status  containerd
+   74  ping 4.2.2.4
+   75  yum update
+   76  sudo su -
+   77  mkdir -p /etc/containerd
+   78  containerd config default>/etc/containerd/config.toml
+   79  sudo systemctl restart containerd
+   80  sudo systemctl enable containerd
+   81  systemctl status  containerd
+   82  lsmod | grep br_netfilter
+   83  systemctl enable kubelet --now
+   84  hostnamectl set-hostname node4.cando.com
+   85  reboot
+   86  mkdir -p /etc/containerd
+   87  containerd config default>/etc/containerd/config.toml
+   88  sudo systemctl restart containerd
+   89  sudo systemctl enable containerd
+   90  systemctl status  containerd
+   91  clear
+   92  dnf install kubeadm -y
+   93  yum install containerd.io
+   94  sudo tee /etc/modules-load.d/containerd.conf <<EOF
+   95  overlay
+   96  br_netfilter
+   97  EOF
+   98  sudo tee /etc/sysctl.d/kubernetes.conf<<EOF
+   99  net.bridge.bridge-nf-call-ip6tables = 1
+  100  net.bridge.bridge-nf-call-iptables = 1
+  101  net.ipv4.ip_forward = 1
+  102  EOF
+  103  sudo su -
+  104  hostnamectl 
+  105  kubeadm join k8s.cando.com:6443 --token 4f6w0q.96xb3r5dquh5dd23         --discovery-token-ca-cert-hash sha256:c6019565d759ce562054026654c925cec2b11060222d4b6140125da71e811fdb
+  106  kubeadm reset
+  107  kubeadm join k8s.cando.com:6443 --token 4f6w0q.96xb3r5dquh5dd23         --discovery-token-ca-cert-hash sha256:c6019565d759ce562054026654c925cec2b11060222d4b6140125da71e811fdb
+  108  cat /sys/class/dmi/id/product_uuid
+  109  dnf update
+  110  nmtui
+  111  yum install nfs-utils -y
+  112  history
+  113  ls
+  114  history > history.txt
